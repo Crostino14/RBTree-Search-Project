@@ -204,8 +204,6 @@ test03:
 
 all_test2: test00 test01 test02 test03
 
-all_test: test0 test1 test2 test3 test00 test01 test02 test03
-
 tables:
 	python ./src/CreateTables.py
 
