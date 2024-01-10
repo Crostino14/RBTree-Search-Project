@@ -43,6 +43,8 @@ def format_version_name(dir_name):
         return 'Sequential'
     elif 'mpi_openmp' in dir_name.lower():
         return 'MPI_OpenMP'
+    elif 'cuda' in dir_name.lower():
+        return 'CUDA'
     else:
         return 'Unknown'
 
@@ -90,7 +92,10 @@ def read_and_process_csv(file_path, seq_df=None):
         df['Efficiency (%)'] = 100 * df['Speedup'] / (df['OMP Threads'] * df['MPI Processes'])
         df['Speedup'] = df['Speedup'].apply(lambda x: f"{x:.2f}")
         df['Efficiency (%)'] = df['Efficiency (%)'].apply(lambda x: f"{x:.2f}%")
-    
+    else:
+        df['Speedup'] = 1
+        df['Efficiency (%)'] = "100%"
+        
     df.rename(columns={'Block Size': 'CUDA Threads per Block'}, inplace=True)
 
     return df
@@ -106,33 +111,52 @@ def create_performance_tables(base_dirs, output_dir):
     optimization_levels = ['opt0', 'opt1', 'opt2', 'opt3']
 
     for optimization_level in optimization_levels:
+        # Directory per ciascuna versione
         seq_dir = os.path.join(base_dirs[0], optimization_level)
         mpi_dir = os.path.join(base_dirs[1], optimization_level)
+        cuda_dir = os.path.join(base_dirs[2], optimization_level)
 
-        if not os.path.exists(seq_dir) or not os.path.exists(mpi_dir):
+        if not os.path.exists(seq_dir):
             continue
 
         seq_files = {int(file.split('_')[-1].split('.')[0]): file for file in os.listdir(seq_dir) if file.endswith('.csv')}
 
         for num_values, seq_file in seq_files.items():
             seq_df = read_and_process_csv(os.path.join(seq_dir, seq_file))
-
             if 'Num Values' in seq_df.columns:
                 seq_df.drop(columns=['Num Values'], inplace=True)
 
-            combined_df = pd.DataFrame(columns=seq_df.columns)
-            combined_df = pd.concat([combined_df, seq_df], ignore_index=True)
+            # Crea e salva la tabella per MPI/OpenMP
+            if os.path.exists(mpi_dir):
+                mpi_combined_df = pd.DataFrame(columns=seq_df.columns)
+                mpi_combined_df = pd.concat([mpi_combined_df, seq_df], ignore_index=True)
 
-            mpi_files = [file for file in os.listdir(mpi_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
-            for mpi_file in mpi_files:
-                mpi_df = read_and_process_csv(os.path.join(mpi_dir, mpi_file), seq_df)
-                mpi_df.drop(columns=['Num Values'], errors='ignore', inplace=True)
-                combined_df = pd.concat([combined_df, mpi_df], ignore_index=True)
+                mpi_files = [file for file in os.listdir(mpi_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
+                for mpi_file in mpi_files:
+                    mpi_df = read_and_process_csv(os.path.join(mpi_dir, mpi_file), seq_df)
+                    mpi_df.drop(columns=['Num Values'], errors='ignore', inplace=True)
+                    mpi_combined_df = pd.concat([mpi_combined_df, mpi_df], ignore_index=True)
 
-            combined_df.sort_values(by=['MPI Processes', 'OMP Threads'], ascending=True, inplace=True)
-            table_name = f'table_{optimization_level}_{num_values}.png'
-            table_path = os.path.join(output_dir, table_name)
-            generate_table_png(combined_df, table_path, optimization_level, num_values)
+                mpi_combined_df.sort_values(by=['MPI Processes', 'OMP Threads'], ascending=True, inplace=True)
+                mpi_table_name = f'mpi_table_{optimization_level}_{num_values}.png'
+                mpi_table_path = os.path.join(output_dir, mpi_table_name)
+                generate_table_png(mpi_combined_df, mpi_table_path, optimization_level, num_values)
+
+            # Crea e salva la tabella per CUDA
+            if os.path.exists(cuda_dir):
+                cuda_combined_df = pd.DataFrame(columns=seq_df.columns)
+                cuda_combined_df = pd.concat([cuda_combined_df, seq_df], ignore_index=True)
+
+                cuda_files = [file for file in os.listdir(cuda_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
+                for cuda_file in cuda_files:
+                    cuda_df = read_and_process_csv(os.path.join(cuda_dir, cuda_file), seq_df)
+                    cuda_df.drop(columns=['Num Values'], errors='ignore', inplace=True)
+                    cuda_combined_df = pd.concat([cuda_combined_df, cuda_df], ignore_index=True)
+
+                cuda_combined_df.sort_values(by=['CUDA Threads per Block'], ascending=True, inplace=True)
+                cuda_table_name = f'cuda_table_{optimization_level}_{num_values}.png'
+                cuda_table_path = os.path.join(output_dir, cuda_table_name)
+                generate_table_png(cuda_combined_df, cuda_table_path, optimization_level, num_values)
 
 def generate_table_png(dataframe, file_path, optimization_level, num_values):
     """
@@ -273,7 +297,7 @@ def create_performance_plots(base_dirs, plot_output_dir):
                 collage_path = create_collage(image_paths, optimization_level, plot_output_dir)
     
 # Define base directories and output directories
-base_dirs = ['./data/SequentialCSVResult', './data/MPIOpenMPCSVResult']
+base_dirs = ['./data/SequentialCSVResult', './data/MPIOpenMPCSVResult', './data/CUDAOpenMPCSVResult']
 table_output_dir = './plot_and_tables/PerformanceTable'
 plot_output_dir = './plot_and_tables/PerformancePlot'
 
