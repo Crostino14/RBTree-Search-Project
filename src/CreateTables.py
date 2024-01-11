@@ -78,34 +78,31 @@ def read_and_create_tables(csv_dirs):
 
             # Convert columns to the correct types
             df['OMP Threads'] = df['OMP Threads'].astype(int)
-            df['MPI Processes'] = df['MPI Processes'].astype(int)
-            df['Block Size'] = df['Block Size'].astype(int)
             df['Num Values'] = df['Num Values'].astype(int)
+            df['MPI Processes'] = df['MPI Processes'].astype(int, errors='ignore')
             df['Search Time (s)'] = df['Search Time (s)'].apply(format_float)
             df['Total Program Time (s)'] = df['Total Program Time (s)'].apply(format_float)
 
             if 'CUDA' in version_name:
-                df.rename(columns={'Search Time (s)': 'GPU Search Time (s)'}, inplace=True)
+                df.rename(columns={'Block Size': 'CUDA Threads per Block', 'Search Time (s)': 'GPU Search Time (s)'}, inplace=True)
+                df['CUDA Threads per Block'] = df['CUDA Threads per Block'].astype(int)
                 df['CPU Time (s)'] = df['Total Program Time (s)'].astype(float) - df['GPU Search Time (s)'].astype(float)
                 df['CPU Time (s)'] = df['CPU Time (s)'].apply(format_float)
-                
-                # Define the columns and their order for the final table (including CPU Time)
-                final_table_cols = ['Version', 'OMP Threads', 'MPI Processes', 'Num Values',
+                final_table_cols = ['Version', 'OMP Threads', 'MPI Processes', 'CUDA Threads per Block', 'Num Values',
                                     'GPU Search Time (s)', 'CPU Time (s)', 'Total Program Time (s)']
             else:
-                final_table_cols = ['Version', 'OMP Threads', 'MPI Processes', 'Num Values',
-                                    'Search Time (s)', 'Total Program Time (s)']
+                final_table_cols = ['Version', 'OMP Threads', 'MPI Processes', 'Num Values', 'Search Time (s)', 'Total Program Time (s)']
 
             df = df[final_table_cols]
             tables.append(df)
 
         if tables:
             final_table = pd.concat(tables)
+            final_table.sort_values(by='Num Values', inplace=True)
             output_dir = os.path.join('./plot_and_tables', version_name)
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
-            # Generating the table image
             fig, ax = plt.subplots(figsize=(12, 4))
             ax.axis('tight')
             ax.axis('off')
@@ -117,11 +114,10 @@ def read_and_create_tables(csv_dirs):
             table_ax.set_fontsize(8)
             table_ax.scale(1.2, 1.2)
 
-            # Set the background color for the first row (headers) to a shade of blue
             for key, cell in table_ax.get_celld().items():
-                if key[0] == 0:  # Check if the cell is in the first row (header)
-                    cell.set_facecolor('#4F81BD')  # Change the color as desired
-                    cell.set_text_props(color='w')  # Change the text color to white for better readability
+                if key[0] == 0:
+                    cell.set_facecolor('#4F81BD')
+                    cell.set_text_props(color='w')
 
             plt.savefig(os.path.join(output_dir, f'table_opt{optimization_level}.png'), bbox_inches='tight', pad_inches=0.05)
 

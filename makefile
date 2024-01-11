@@ -2,7 +2,7 @@
 
 VALS = 200 2000 20000
 THREADS = 1 2 4 8
-MPI_PROCESSES = 2 4 8 16
+MPI_PROCESSES = 1 2 4
 SEED = 123
 SEED1 = 345
 
@@ -44,7 +44,9 @@ clean:
 all: compile0 compile1 compile2 compile3
 
 install_dependencies: 
-	pip3 install -r requirements.txt
+	pip3 install matplotlib
+	pip3 install pandas
+	pip3 install numpy
 
 compile0:
 	gcc -o ./build/opt0/RBSequential0 ./src/RBSequential.c ./src/RBMatrix.c -O0

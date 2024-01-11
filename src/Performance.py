@@ -77,41 +77,42 @@ def read_and_process_csv(file_path, seq_df=None):
     for col in ['Search Time (s)', 'Total Program Time (s)']:
         df[col] = df[col].apply(format_float)
 
-    df.drop(columns=['Value Found (1=yes 0=no)', 'Num Values'], errors='ignore', inplace=True)
+    # Remove the 'Value Found (1=yes 0=no)', 'Num Values', 'Efficiency (%)' columns
+    df.drop(columns=['Value Found (1=yes 0=no)', 'Efficiency (%)'], errors='ignore', inplace=True)
 
     # Add a column for the version
-    df.insert(0, 'Version', format_version_name(os.path.basename(file_path)))
+    version = format_version_name(os.path.basename(file_path))
+    df.insert(0, 'Version', version)
 
     # Add columns for Speedup and Efficiency
     df['Speedup'] = 1  # Default value for sequential
-    df['Efficiency (%)'] = "100%"  # Default value for sequential
 
     # Calculate Speedup and Efficiency if parallel data is provided
     if seq_df is not None and 'Sequential' not in df['Version'].values:
         df['Speedup'] = seq_df['Total Program Time (s)'].astype(float) / df['Total Program Time (s)'].astype(float)
-        df['Efficiency (%)'] = 100 * df['Speedup'] / (df['OMP Threads'] * df['MPI Processes'])
-        df['Speedup'] = df['Speedup'].apply(lambda x: f"{x:.2f}")
-        df['Efficiency (%)'] = df['Efficiency (%)'].apply(lambda x: f"{x:.2f}%")
+        df['Speedup'] = df['Speedup'].apply(lambda x: f"{x:.7f}")
     else:
         df['Speedup'] = 1
-        df['Efficiency (%)'] = "100%"
-        
+    
     df.rename(columns={'Block Size': 'CUDA Threads per Block'}, inplace=True)
+
+    # Ensure 'Sequential' is the first row
+    df = df.sort_values(by='Version', ascending=True if 'Sequential' in df['Version'].values else False)
 
     return df
 
 def create_performance_tables(base_dirs, output_dir):
     """
-    Generates performance tables for different optimization levels and values.
+    Generates separate performance tables for different optimization levels, 
+    values, and version types (CUDA+OMP, MPI+OMP), including sequential version data.
     
     Args:
-    - base_dirs (list): List of base directories for sequential and MPI/OpenMP data.
+    - base_dirs (list): List of base directories for sequential, MPI/OpenMP, and CUDA/OpenMP data.
     - output_dir (str): Output directory for generated tables.
     """
     optimization_levels = ['opt0', 'opt1', 'opt2', 'opt3']
 
     for optimization_level in optimization_levels:
-        # Directory per ciascuna versione
         seq_dir = os.path.join(base_dirs[0], optimization_level)
         mpi_dir = os.path.join(base_dirs[1], optimization_level)
         cuda_dir = os.path.join(base_dirs[2], optimization_level)
@@ -126,37 +127,33 @@ def create_performance_tables(base_dirs, output_dir):
             if 'Num Values' in seq_df.columns:
                 seq_df.drop(columns=['Num Values'], inplace=True)
 
-            # Crea e salva la tabella per MPI/OpenMP
             if os.path.exists(mpi_dir):
-                mpi_combined_df = pd.DataFrame(columns=seq_df.columns)
-                mpi_combined_df = pd.concat([mpi_combined_df, seq_df], ignore_index=True)
-
+                mpi_combined_dfs = [seq_df]
                 mpi_files = [file for file in os.listdir(mpi_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
                 for mpi_file in mpi_files:
                     mpi_df = read_and_process_csv(os.path.join(mpi_dir, mpi_file), seq_df)
-                    mpi_df.drop(columns=['Num Values'], errors='ignore', inplace=True)
-                    mpi_combined_df = pd.concat([mpi_combined_df, mpi_df], ignore_index=True)
+                    mpi_combined_dfs.append(mpi_df)
 
-                mpi_combined_df.sort_values(by=['MPI Processes', 'OMP Threads'], ascending=True, inplace=True)
-                mpi_table_name = f'mpi_table_{optimization_level}_{num_values}.png'
-                mpi_table_path = os.path.join(output_dir, mpi_table_name)
-                generate_table_png(mpi_combined_df, mpi_table_path, optimization_level, num_values)
+                mpi_final_df = pd.concat(mpi_combined_dfs, ignore_index=True)
+                mpi_final_df.sort_values(by=['Num Values', 'OMP Threads'], ascending=[True, True], inplace=True)
+                mpi_final_df.insert(0, 'SortOrder', mpi_final_df['Version'].apply(lambda x: 0 if 'Sequential' in x else 1))
+                mpi_final_df.sort_values(by=['SortOrder', 'Num Values', 'OMP Threads'], inplace=True)
+                mpi_final_df.drop(columns=['SortOrder'], inplace=True)
+                generate_table_png(mpi_final_df, os.path.join(output_dir, f'mpi_table_{optimization_level}_{num_values}.png'), optimization_level, num_values)
 
-            # Crea e salva la tabella per CUDA
             if os.path.exists(cuda_dir):
-                cuda_combined_df = pd.DataFrame(columns=seq_df.columns)
-                cuda_combined_df = pd.concat([cuda_combined_df, seq_df], ignore_index=True)
-
+                cuda_combined_dfs = [seq_df]
                 cuda_files = [file for file in os.listdir(cuda_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
                 for cuda_file in cuda_files:
                     cuda_df = read_and_process_csv(os.path.join(cuda_dir, cuda_file), seq_df)
-                    cuda_df.drop(columns=['Num Values'], errors='ignore', inplace=True)
-                    cuda_combined_df = pd.concat([cuda_combined_df, cuda_df], ignore_index=True)
+                    cuda_combined_dfs.append(cuda_df)
 
-                cuda_combined_df.sort_values(by=['CUDA Threads per Block'], ascending=True, inplace=True)
-                cuda_table_name = f'cuda_table_{optimization_level}_{num_values}.png'
-                cuda_table_path = os.path.join(output_dir, cuda_table_name)
-                generate_table_png(cuda_combined_df, cuda_table_path, optimization_level, num_values)
+                cuda_final_df = pd.concat(cuda_combined_dfs, ignore_index=True)
+                cuda_final_df.sort_values(by=['Num Values', 'OMP Threads'], ascending=[True, True], inplace=True)
+                cuda_final_df.insert(0, 'SortOrder', cuda_final_df['Version'].apply(lambda x: 0 if 'Sequential' in x else 1))
+                cuda_final_df.sort_values(by=['SortOrder', 'Num Values', 'OMP Threads'], inplace=True)
+                cuda_final_df.drop(columns=['SortOrder'], inplace=True)
+                generate_table_png(cuda_final_df, os.path.join(output_dir, f'cuda_table_{optimization_level}_{num_values}.png'), optimization_level, num_values)
 
 def generate_table_png(dataframe, file_path, optimization_level, num_values):
     """
@@ -213,9 +210,12 @@ def plot_speedup_for_mpi_process(dataframe, mpi_procs, optimization_level, outpu
     plt.figure(figsize=(10, 6))
     plt.plot(df_filtered['OMP Threads'], df_filtered['Speedup'], 'o-', label=f'Speedup for {mpi_procs} MPI Procs')
 
+    for i, row in df_filtered.iterrows():
+            plt.text(row['OMP Threads'], row['Speedup'], f"{row['Speedup']:.4f}", fontsize=8, verticalalignment='bottom')
+
     # Ideal speedup line based on sequential version
     omp_threads = df_filtered['OMP Threads'].unique()
-    ideal_speedup_line = seq_speedup * omp_threads  # Assuming ideal speedup is linear
+    ideal_speedup_line = seq_speedup * omp_threads
     plt.plot(omp_threads, ideal_speedup_line, 'r--', label='Ideal Speedup')
 
     plt.title(f'Speedup for Optimization Level {optimization_level} with {num_values} Values and {mpi_procs} MPI Processes')
@@ -230,35 +230,8 @@ def plot_speedup_for_mpi_process(dataframe, mpi_procs, optimization_level, outpu
     plt.savefig(filepath)
     plt.close()
     return filepath
-
-def create_collage(image_paths, optimization_level, output_dir):
-    """
-    Creates a collage by combining multiple images into a single image.
     
-    Args:
-    - image_paths (list): List of paths to images for collage.
-    - optimization_level (str): Optimization level for the collage.
-    - output_dir (str): Output directory for the generated collage.
-    """
-    images = [Image.open(x) for x in image_paths]
-    widths, heights = zip(*(i.size for i in images))
-
-    max_width = max(widths)
-    max_height = max(heights)
-
-    collage_width = max_width * 2
-    collage_height = max_height * 2
-
-    collage = Image.new('RGB', (collage_width, collage_height))
-
-    for idx, im in enumerate(images):
-        quadrant = idx % 4
-        x_offset = (idx % 2) * max_width
-        y_offset = (idx // 2) * max_height
-        collage.paste(im, (x_offset, y_offset))
-
-    collage.save(os.path.join(output_dir, f'collage_{optimization_level}.png'))
-
+    
 def create_performance_plots(base_dirs, plot_output_dir):
     """
     Generates performance plots for different optimization levels and values.
@@ -292,9 +265,6 @@ def create_performance_plots(base_dirs, plot_output_dir):
             for mpi_procs in mpi_process_counts:
                 image_path = plot_speedup_for_mpi_process(combined_df, mpi_procs, optimization_level, plot_output_dir, num_values, 1)
                 image_paths.append(image_path)
-            
-            if image_paths:
-                collage_path = create_collage(image_paths, optimization_level, plot_output_dir)
     
 # Define base directories and output directories
 base_dirs = ['./data/SequentialCSVResult', './data/MPIOpenMPCSVResult', './data/CUDAOpenMPCSVResult']

@@ -4,7 +4,7 @@ Number of values (nodes in RBTree) to insert: 2000
 Sequential search for value 46.
 Value found at node 3891.
 Execution time of sequential search: 0.000000200 seconds.
-Execution time of total program: 0.002065300 seconds.
+Execution time of total program: 0.002128000 seconds.
 
 Red-Black Tree Representation:
 

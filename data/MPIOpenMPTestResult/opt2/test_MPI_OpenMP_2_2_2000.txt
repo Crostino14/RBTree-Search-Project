@@ -6,8 +6,8 @@ Random seed: 123
 
 Parallel search with OpenMP+MPI for value 40.
 Value found at node 561.
-Execution time of parallel search: 0.000592600 seconds
-Execution time of total program: 0.009251800 seconds.
+Execution time of parallel search: 0.000460200 seconds
+Execution time of total program: 0.007338100 seconds.
 
 Red-Black Tree Representation:
 

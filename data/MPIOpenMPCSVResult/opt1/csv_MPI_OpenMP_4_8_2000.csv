@@ -1,2 +1,2 @@
 OMP Threads,MPI Processes,Block Size,Num Values,Search Time (s),Total Program Time (s),Value Found (1=yes 0=no)
-8,4,0,2000,0.000949900,0.009341700,1
+8,4,0,2000,0.001046800,0.008561800,1
