@@ -421,7 +421,7 @@ int main(int argc, char **argv)
 
     // Timing the kernel execution using CUDA events
     cudaEventRecord(startEvent);
-    searchSubtreeKernel<<<gridSize, blockSize, dynamicSharedMemSize>>>(d_rbMatrixNodes, subtreeRoots, subtreeSizes, numBlocks, searchValue, d_foundIndex);
+    balancedSearchSubtreeKernel<<<gridSize, blockSize, dynamicSharedMemSize>>>(d_rbMatrixNodes, subtreeRoots, subtreeSizes, numBlocks, searchValue, d_foundIndex);
     cudaEventRecord(stopEvent);
     
     cudaDeviceSynchronize();

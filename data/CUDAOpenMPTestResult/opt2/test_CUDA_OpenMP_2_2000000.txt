@@ -1,0 +1,15 @@
+Input Parameters:
+Number of OpenMP threads: 2
+Number of CUDA threads per block: 768
+Number of values (nodes in RBTree) to insert: 2000000
+
+Parallel search with CUDA for value 32.
+Value found at node 3990561
+Execution time of parallel search: 0.000359424 seconds
+Execution time of total program: 0.630274600 seconds.
+
+Red-Black Tree Representation:
+
+Real Total Number of Nodes: 3999999
+Maximum Tree Capacity: 4500000
+

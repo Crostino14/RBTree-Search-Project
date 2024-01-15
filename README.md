@@ -37,11 +37,11 @@ compile1 for O1 (basic optimizations)
 compile2 for O2 (further optimizations)
 compile3 for O3 (full optimization)
 
-## make test0 make test1 make test2 make test3 make test00 make test01 make test02 make test03
+## make test0 - make test1 - make test2 - make test3 - make test00 - make test01 - make test02 - make test03
 
 Runs tests for different compiled versions of the project with predefined numbers of values, threads, and MPI processes using a fixed seed.
 
-## make all_test1 make all_test2
+## make all_test1 - make all_test2
 
 Combines multiple test targets for convenience.
 

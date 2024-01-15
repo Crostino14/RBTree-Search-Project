@@ -117,18 +117,6 @@ void matrixSetElement(RBMatrix *matrix, int row, RBNode node);
 RBNode matrixGetElement(RBMatrix *matrix, int row);
 
 /**
- * @brief Checks if a specific value is already present in the Red-Black Tree.
- *
- * The isValuePresent function examines whether a given value exists in the Red-Black Tree represented
- * by the matrix. It traverses the tree structure to determine the presence of the specified value.
- * 
- * @param matrix The RBMatrix to search for the value.
- * @param value The value to check for existence in the tree.
- * @return 1 if the value exists, 0 if not.
- */
-int isValuePresent(RBMatrix *matrix, int value);
-
-/**
  * @brief Inserts a new value into the Red-Black Tree represented by the RBMatrix.
  * 
  * The insertValue function adds a new value to the Red-Black Tree within the RBMatrix.
@@ -246,6 +234,18 @@ double getCurrentTime();
  * @param foundIndex The index where the value was found; if the value is not found, it should be INT_MAX.
  */
 void writeResultsToCSV(const char *filePath, int ompThreads, int mpiProcesses, int numValues, int blockSize, double searchTime, double totalProgramTime, int foundIndex);
+
+/**
+ * @brief Shuffles the elements of an integer array.
+ *
+ * The shuffle function rearranges the elements of an integer array in a random order.
+ * It utilizes the Fisher-Yates algorithm to achieve a uniform shuffle, ensuring that
+ * each permutation is equally likely.
+ *
+ * @param array The integer array to be shuffled.
+ * @param n The number of elements in the array.
+ */
+void shuffle(int *array, int n);
 
 #ifdef __cplusplus
 }

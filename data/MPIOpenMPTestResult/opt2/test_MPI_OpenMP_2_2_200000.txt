@@ -1,0 +1,16 @@
+Input Parameters:
+Number of OpenMP threads: 2
+Number of MPI processes: 2
+Number of values (nodes in RBTree) to insert: 200000
+Random seed: 123
+
+Parallel search with OpenMP+MPI for value 40.
+Value found at node 382411.
+Execution time of parallel search: 0.004380000 seconds
+Execution time of total program: 0.048160800 seconds.
+
+Red-Black Tree Representation:
+
+Real Total Number of Nodes: 399999
+Maximum Tree Capacity: 450000
+

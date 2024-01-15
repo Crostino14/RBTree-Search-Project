@@ -174,46 +174,6 @@ RBNode matrixGetElement(RBMatrix *matrix, int row)
 }
 
 /**
- * @brief Checks if a specific value is already present in the Red-Black Tree.
- *
- * The isValuePresent function examines whether a given value exists in the Red-Black Tree represented
- * by the matrix. It traverses the tree structure to determine the presence of the specified value.
- * 
- * @param matrix The RBMatrix to search for the value.
- * @param value The value to check for existence in the tree.
- * @return 1 if the value exists, 0 if not.
- */
-int isValuePresent(RBMatrix *matrix, int value)
-{
-    if (matrix == NULL || matrix->totalNodes == 0)
-    {
-        return 0;
-    }
-
-    int currentIndex = 0;
-
-    while (currentIndex != -1)
-    {
-        RBNode currentNode = matrix->nodes[currentIndex];
-
-        if (currentNode.value == value)
-        {
-            return 1; // Valore trovato
-        }
-
-        if (value < currentNode.value)
-        {
-            currentIndex = currentNode.left;
-        }
-        else
-        {
-            currentIndex = currentNode.right;
-        }
-    }
-    return 0;
-}
-
-/**
  * @brief Inserts a new value into the Red-Black Tree represented by the RBMatrix.
  * 
  * The insertValue function adds a new value to the Red-Black Tree within the RBMatrix.
@@ -239,11 +199,6 @@ void insertValue(RBMatrix *matrix, int value)
     }
 
     RBNode newNode = {value, RED, -1, -1, -1};
-
-    if (isValuePresent(matrix, value))
-    {
-        return;
-    }
 
     int current = 0;
     int parent = -1;
@@ -456,29 +411,56 @@ int getRandomNumber(int min, int max)
 }
 
 /**
- * @brief Populates the Red-Black Tree represented by the RBMatrix with random values.
- * 
- * The randomPopulateRBMatrix function fills the Red-Black Tree within the RBMatrix with a specified
- * number of randomly generated unique values. It uses a random number generator to create values and
- * ensures each value inserted into the tree is unique.
- * 
+ * @brief Populates the Red-Black Tree represented by the RBMatrix with a specified number of unique values.
+ *
+ * This function fills the Red-Black Tree within the RBMatrix with a specified number of unique values, 
+ * ranging from 1 to numValues. It first generates an array of integers in this range, then shuffles 
+ * the array to randomize the order of the values. Finally, it iterates through the shuffled array, 
+ * inserting each value into the Red-Black Tree. This method ensures that each value in the tree is unique 
+ * and that the values are inserted in a random order, providing a balanced and randomized tree structure.
+ *
  * @param matrix The RBMatrix representing the Red-Black Tree.
- * @param numValues The number of random values to insert into the tree.
+ * @param numValues The number of unique values to insert into the tree.
  */
-void randomPopulateRBMatrix(RBMatrix *matrix, int numValues)
-{
-    int maxValue = numValues * 2;
-    int count = 0;
+void randomPopulateRBMatrix(RBMatrix *matrix, int numValues) {
+    int *values = malloc(numValues * sizeof(int));
+    if (!values) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
 
-    while (count < numValues)
-    {
-        int randomValue = getRandomNumber(0, numValues);
+    for (int i = 0; i < numValues; i++) {
+        values[i] = i + 1;
+    }
 
-        if (!isValuePresent(matrix, randomValue))
-        {
-            insertValue(matrix, randomValue);
-            count++;
-        }
+    shuffle(values, numValues);
+
+    for (int i = 0; i < numValues; i++) {
+        insertValue(matrix, values[i]);
+    }
+
+    free(values);
+}
+
+/**
+ * @brief Shuffles the elements of an integer array.
+ *
+ * The shuffle function rearranges the elements of an integer array in a random order.
+ * It utilizes the Fisher-Yates algorithm to achieve a uniform shuffle, ensuring that
+ * each permutation is equally likely.
+ *
+ * @param array The integer array to be shuffled.
+ * @param n The number of elements in the array.
+ */
+void shuffle(int *array, int n) {
+    for (int i = n - 1; i > 0; i--) {
+        // Generate a random index between 0 and i (inclusive)
+        int j = rand() % (i + 1);
+
+        // Swap the elements at indices i and j
+        int temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
     }
 }
 
@@ -503,7 +485,7 @@ void printMatrix(RBMatrix *matrix, FILE *fp)
     fprintf(fp, "Real Total Number of Nodes: %d\n", matrix->totalNodes);
     fprintf(fp, "Maximum Tree Capacity: %d\n\n", matrix->maxNodes);
 
-
+    /* Only if you have at least 40 GB of free space on your lock disk!
     for (int i = 0; i < matrix->maxNodes; i++)
     {
         RBNode node = matrix->nodes[i];
@@ -515,6 +497,8 @@ void printMatrix(RBMatrix *matrix, FILE *fp)
                     node.parent, node.left, node.right);
         }
     }
+    */
+
 }
 
 /**

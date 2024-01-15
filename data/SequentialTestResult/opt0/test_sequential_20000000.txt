@@ -1,0 +1,13 @@
+Input Parameters:
+Number of values (nodes in RBTree) to insert: 20000000
+
+Sequential search for value 21.
+Value found at node 39886237.
+Execution time of sequential search: 0.000002900 seconds.
+Execution time of total program: 41.071785000 seconds.
+
+Red-Black Tree Representation:
+
+Real Total Number of Nodes: 39999999
+Maximum Tree Capacity: 45000000
+

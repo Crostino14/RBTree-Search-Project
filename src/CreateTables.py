@@ -44,7 +44,7 @@ def format_float(value):
 
 def format_version_name(version):
     """
-    Formats the version name by removing the "csv_" prefix and replacing underscores with spaces.
+    Formats the version name by removing the "csv_" prefix, numbers, and replacing underscores with spaces.
 
     Args:
     version (str): The version name to be formatted.
@@ -52,7 +52,13 @@ def format_version_name(version):
     Returns:
     str: Formatted version name.
     """
-    return version.replace("csv_", "").replace("_", " ")
+    version_without_prefix = version.replace("csv_", "")
+    
+    version_without_numbers = ''.join(char for char in version_without_prefix if not char.isdigit())
+    
+    formatted_version_name = version_without_numbers.replace("_", " ")
+
+    return formatted_version_name
 
 def read_and_create_tables(csv_dirs):
     """
@@ -76,7 +82,6 @@ def read_and_create_tables(csv_dirs):
             df = pd.read_csv(file_path)
             df['Version'] = format_version_name(os.path.splitext(file)[0])
 
-            # Convert columns to the correct types
             df['OMP Threads'] = df['OMP Threads'].astype(int)
             df['Num Values'] = df['Num Values'].astype(int)
             df['MPI Processes'] = df['MPI Processes'].astype(int, errors='ignore')

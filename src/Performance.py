@@ -44,7 +44,7 @@ def format_version_name(dir_name):
     elif 'mpi_openmp' in dir_name.lower():
         return 'MPI_OpenMP'
     elif 'cuda' in dir_name.lower():
-        return 'CUDA'
+        return 'CUDA_OpenMP'
     else:
         return 'Unknown'
 
@@ -231,7 +231,48 @@ def plot_speedup_for_mpi_process(dataframe, mpi_procs, optimization_level, outpu
     plt.close()
     return filepath
     
+def plot_speedup_for_cuda(dataframe, block_sizes, optimization_level, output_dir, num_values, seq_speedup):
+    """
+    Plots the speedup for a specific block size in CUDA version.
     
+    Args:
+    - dataframe (pandas.DataFrame): DataFrame containing performance data.
+    - block_sizes (list): List of CUDA block sizes.
+    - optimization_level (str): Optimization level for the plot.
+    - output_dir (str): Output directory for the generated plot.
+    - num_values (int): Number of values for the plot.
+    - seq_speedup (float): Sequential speedup for reference.
+    
+    Returns:
+    - str: File path of the generated plot.
+    """
+    plt.figure(figsize=(10, 6))
+
+    for block_size in block_sizes:
+        df_filtered = dataframe[(dataframe['CUDA Threads per Block'] == block_size) & (dataframe['Version'] != 'Sequential')]
+        plt.plot(df_filtered['OMP Threads'], df_filtered['Speedup'], 'o-', label=f'Speedup for Block Size {block_size}')
+
+        for i, row in df_filtered.iterrows():
+            plt.text(row['OMP Threads'], row['Speedup'], f"{row['Speedup']:.4f}", fontsize=8, verticalalignment='bottom')
+
+    # Ideal speedup line based on sequential version
+    omp_threads = df_filtered['OMP Threads'].unique()
+    ideal_speedup_line = seq_speedup * omp_threads
+    plt.plot(omp_threads, ideal_speedup_line, 'r--', label='Ideal Speedup')
+
+    plt.title(f'Speedup for Optimization Level {optimization_level} with {num_values} Values and CUDA Version')
+    plt.xlabel('OMP Threads')
+    plt.ylabel('Speedup')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    filename = f'speedup_optlevel_{optimization_level}_cuda_numvalues_{num_values}.png'
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath)
+    plt.close()
+    return filepath
+
 def create_performance_plots(base_dirs, plot_output_dir):
     """
     Generates performance plots for different optimization levels and values.
@@ -245,26 +286,41 @@ def create_performance_plots(base_dirs, plot_output_dir):
     for optimization_level in optimization_levels:
         seq_dir = os.path.join(base_dirs[0], optimization_level)
         mpi_dir = os.path.join(base_dirs[1], optimization_level)
+        cuda_dir = os.path.join(base_dirs[2], optimization_level)
 
         seq_files = {int(file.split('_')[-1].split('.')[0]): file for file in os.listdir(seq_dir) if file.endswith('.csv')}
 
         for num_values, seq_file in seq_files.items():
             seq_df = read_and_process_csv(os.path.join(seq_dir, seq_file))
             mpi_files = [file for file in os.listdir(mpi_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
+            cuda_files = [file for file in os.listdir(cuda_dir) if file.endswith('.csv') and int(file.split('_')[-1].split('.')[0]) == num_values]
 
             combined_df = pd.DataFrame()
             for mpi_file in mpi_files:
                 mpi_df = read_and_process_csv(os.path.join(mpi_dir, mpi_file), seq_df)
                 combined_df = pd.concat([combined_df, mpi_df], ignore_index=True)
 
+            cuda_df = pd.DataFrame()
+            for cuda_file in cuda_files:
+                tmp_df = read_and_process_csv(os.path.join(cuda_dir, cuda_file), seq_df)
+                cuda_df = pd.concat([cuda_df, tmp_df], ignore_index=True)
+
             combined_df['Speedup'] = combined_df['Speedup'].astype(float)
+            cuda_df['Speedup'] = cuda_df['Speedup'].astype(float)
+
             combined_df.sort_values(by=['MPI Processes', 'OMP Threads'], ascending=True, inplace=True)
-            
-            image_paths = []
+            cuda_df.sort_values(by=['CUDA Threads per Block', 'OMP Threads'], ascending=True, inplace=True)
+
+            image_paths_mpi = []
             mpi_process_counts = combined_df['MPI Processes'].unique()
             for mpi_procs in mpi_process_counts:
-                image_path = plot_speedup_for_mpi_process(combined_df, mpi_procs, optimization_level, plot_output_dir, num_values, 1)
-                image_paths.append(image_path)
+                image_path_mpi = plot_speedup_for_mpi_process(combined_df, mpi_procs, optimization_level, plot_output_dir, num_values, 1)
+                image_paths_mpi.append(image_path_mpi)
+
+            # Choose CUDA block sizes for plotting
+            block_sizes = cuda_df['CUDA Threads per Block'].unique()[:3]  # Choose the first three block sizes
+
+            image_path_cuda = plot_speedup_for_cuda(cuda_df, block_sizes, optimization_level, plot_output_dir, num_values, 1)
     
 # Define base directories and output directories
 base_dirs = ['./data/SequentialCSVResult', './data/MPIOpenMPCSVResult', './data/CUDAOpenMPCSVResult']
