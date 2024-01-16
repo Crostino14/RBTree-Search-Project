@@ -270,13 +270,14 @@ int main(int argc, char **argv) {
     // Barrier to ensure all processes complete their search
     MPI_Barrier(MPI_COMM_WORLD);
 
+    double endTime = MPI_Wtime();
+
     // Reduce the found indices across all processes to get the global result
     int globalFound;
     MPI_Reduce(&foundIndex, &globalFound, 1, MPI_INT, MPI_MIN, 0, MPI_COMM_WORLD);
 
     // Process 0 writes results to an output file
     if (mpi_rank == 0) {
-        double endTime = MPI_Wtime();
         double elapsedTimeSeconds = (endTime - startTime);
 
         // End measuring the execution time of the program
