@@ -259,10 +259,10 @@ int main(int argc, char **argv) {
         tasks = createTasksForAllProcesses(rbMatrix, mpi_size);
     }
 
-    double startTime = MPI_Wtime();
-
     // Scatter tasks to each process
     MPI_Scatter(tasks, sizeof(Task), MPI_BYTE, &myTask, sizeof(Task), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+    double startTime = MPI_Wtime();
 
     // Perform parallel search within each process' task using OpenMP
     foundIndex = parallelSearchInSubtree(myTask, rbMatrix, searchValue);
