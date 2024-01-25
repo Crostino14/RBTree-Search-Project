@@ -307,7 +307,6 @@ int main(int argc, char **argv) {
     MPI_Scatterv(rbMatrix ? rbMatrix->nodes : NULL, sendCounts, displacements, MPI_BYTE, localSubMatrix.nodes, localSubMatrix.count * sizeof(RBNode), MPI_BYTE, 0, MPI_COMM_WORLD);
     
     MPI_Barrier(MPI_COMM_WORLD);
-
     double startTime = MPI_Wtime();
 
     // Perform parallel search within each process' task using OpenMP
