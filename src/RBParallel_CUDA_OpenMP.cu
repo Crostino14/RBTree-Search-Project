@@ -308,8 +308,11 @@ int main(int argc, char **argv)
     int rowsPerSubtree = rbMatrix->totalNodes / numBlocks;
 
     // Allocating memory for arrays storing subtree roots and sizes
-    int *h_subtreeRoots = (int *)malloc(sizeof(int) * numBlocks);
-    int *h_subtreeSizes = (int *)malloc(sizeof(int) * numBlocks);
+    int *h_subtreeRoots;
+    int *h_subtreeSizes;
+
+    cudaMallocHost((void **)&h_subtreeRoots, sizeof(int) * numBlocks);
+    cudaMallocHost((void **)&h_subtreeSizes, sizeof(int) * numBlocks);
 
     // Generating subtree information using OpenMP parallelization
     #pragma omp parallel for
@@ -473,8 +476,8 @@ int main(int argc, char **argv)
     cudaFree(subtreeSizes);
     cudaFree(d_foundIndex);
 
-    free(h_subtreeRoots);
-    free(h_subtreeSizes);
+    cudaFreeHost(h_subtreeRoots);
+    cudaFreeHost(h_subtreeSizes);
     destroyMatrix(rbMatrix);
 
     return 0; // Exiting the program

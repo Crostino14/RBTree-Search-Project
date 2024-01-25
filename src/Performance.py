@@ -91,8 +91,15 @@ def read_and_process_csv(file_path, seq_df=None):
     if seq_df is not None and 'Sequential' not in df['Version'].values:
         df['Speedup'] = seq_df['Total Program Time (s)'].astype(float) / df['Total Program Time (s)'].astype(float)
         df['Speedup'] = df['Speedup'].apply(lambda x: f"{x:.7f}")
+        if 'CUDA' not in df['Version'].values:
+            # Calcolo dell'efficienza
+            df['Efficiency (%)'] = (df['Speedup'].astype(float) / (df['MPI Processes'] * df['OMP Threads'])) * 100
+            df['Efficiency (%)'] = df['Efficiency (%)'].apply(lambda x: f"{x:.2f}")
+        else:
+            df['Efficiency (%)'] = 'N/A'
     else:
         df['Speedup'] = 1
+        df['Efficiency (%)'] = 100
     
     df.rename(columns={'Block Size': 'CUDA Threads per Block'}, inplace=True)
 

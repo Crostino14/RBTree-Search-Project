@@ -3,8 +3,8 @@ Number of values (nodes in RBTree) to insert: 200000
 
 Sequential search for value 22.
 Value found at node 380013.
-Execution time of sequential search: 0.000000300 seconds.
-Execution time of total program: 0.040270800 seconds.
+Execution time of sequential search: 0.000000400 seconds.
+Execution time of total program: 0.038993500 seconds.
 
 Red-Black Tree Representation:
 

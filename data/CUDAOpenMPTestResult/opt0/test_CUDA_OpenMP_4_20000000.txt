@@ -5,8 +5,8 @@ Number of values (nodes in RBTree) to insert: 20000000
 
 Parallel search with CUDA for value 21.
 Value found at node 39886237
-Execution time of parallel search: 0.003732480 seconds
-Execution time of total program: 49.623738500 seconds.
+Execution time of parallel search: 0.003735552 seconds
+Execution time of total program: 53.505204700 seconds.
 
 Red-Black Tree Representation:
 

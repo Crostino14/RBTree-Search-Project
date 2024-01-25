@@ -50,6 +50,14 @@
 #include "../include/RBMatrix.h"
 #include "../include/RBNode.h"
 
+/**
+ * @struct Task
+ * @brief Structure representing a sub-matrix for parallel search within RBMatrix.
+ */
+typedef struct {
+    RBNode *nodes;   // Array of RBMatrix's node
+    int count;       // Number of nodes of the sub-matrix
+} RBSubMatrix;
 
 /**
  * @struct Task
@@ -92,106 +100,146 @@ RBMatrix *createAndPopulateRBMatrix(int numValues)
 
 
 /**
- * @brief Distribute work segments of the RBMatrix to MPI processes as discrete tasks.
+ * @brief Creates tasks for all MPI processes in the parallel Red-Black Tree search.
  *
- * This function is responsible for the crucial step of dividing the entire search domain, 
- * represented by the RBMatrix, into smaller, manageable tasks that can be processed in parallel 
- * by different MPI processes. The division of labor is based on the total number of nodes 
- * within the RBMatrix and the number of available MPI processes. Each task encompasses a range 
- * of indices, defining which portion of the RBMatrix a given MPI process will search. The 
- * distribution strategy ensures that each process receives a nearly equal share of the workload, 
- * with any remainder nodes being distributed one by one to the initial processes. This helps 
- * maintain load balancing across processes, which is vital for achieving optimal parallel 
- * performance. The function returns an array of Task structures, with each Task corresponding 
- * to the search range assigned to a particular MPI process. This organized approach to task 
- * distribution sets the stage for an efficient parallel search, as it aligns with the data 
- * parallelism model where each process operates on a different subset of the data.
+ * This function divides the entire search domain of the Red-Black Tree, represented by the RBMatrix,
+ * into discrete tasks for processing by different MPI processes. It calculates the distribution
+ * of nodes from the RBMatrix to each process, ensuring a balanced workload. The function returns
+ * an array of Task structures, with each Task encompassing a range of indices (start and end index) 
+ * in the RBNode array that a particular MPI process will handle. This division of tasks is crucial 
+ * for achieving load balancing across MPI processes and thereby enhancing the efficiency of the parallel 
+ * search operation.
  *
  * @param rbMatrix Pointer to the RBMatrix containing the nodes to be searched.
- * @param numProcesses The total number of MPI processes available for the search.
- * @return Task* An array of Task structures, with each Task defining the search range for an MPI process.
+ * @param numProcesses The total number of MPI processes available for executing the search.
+ * @return Task* An array of Task structures, each defining the search range (start and end index) 
+ *         for an MPI process. If memory allocation fails, the program will abort with an MPI_Abort call.
+ *
+ * @return
+ * An array of Task structures, each indicating the portion of the RBMatrix to be handled by an MPI process.
  */
-Task *createTasksForAllProcesses(RBMatrix *rbMatrix, int numProcesses)
-{
+Task *createTasksForAllProcesses(RBMatrix *rbMatrix, int numProcesses) {
     Task *tasks = malloc(numProcesses * sizeof(Task));
+    if (!tasks) {
+        fprintf(stderr, "Failed to allocate memory for tasks.\n");
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
     int totalNodes = rbMatrix->totalNodes;
     int nodesPerProcess = totalNodes / numProcesses;
     int remainingNodes = totalNodes % numProcesses;
+    int currentStartIndex = 0;
 
-    for (int i = 0; i < numProcesses; ++i)
-    {
-        int start = i * nodesPerProcess;
-        int extraNode = (i < remainingNodes) ? 1 : 0;
-        int end = start + nodesPerProcess + extraNode;
-
-        if (end > totalNodes)
-        {
-            end = totalNodes;
-        }
-
-        tasks[i].startIndex = start;
-        tasks[i].endIndex = end;
+    for (int i = 0; i < numProcesses; ++i) {
+        tasks[i].startIndex = currentStartIndex;
+        tasks[i].endIndex = currentStartIndex + nodesPerProcess + (i < remainingNodes);
+        currentStartIndex = tasks[i].endIndex;
     }
 
     return tasks;
 }
 
-/**
- * @brief Perform a parallelized search for a value within a segment of the RBMatrix.
- *
- * This function is at the heart of the parallel search algorithm. It utilizes OpenMP to
- * distribute the search workload across multiple threads, each operating on a subset of nodes
- * within the given task's range. The task structure includes start and end indices, delineating
- * a segment of the RBMatrix to be searched. The OpenMP `parallel for` directive, along with
- * dynamic scheduling, ensures a balanced distribution of work, where threads dynamically claim
- * work segments as they become available. The `reduction` clause is critical for identifying
- * the smallest index at which the desired value is found, as it performs a parallel reduction
- * across the threads to find the minimum of all indices where the search value matches.
- * The search operation's parallel nature aims to leverage multi-core processors to expedite
- * the search process, crucial for large data sets where sequential search would be
- * prohibitively slow. The function returns the minimum index where the value is found
- * or INT_MAX if the value is not present in the provided RBMatrix segment.
- *
- * @param task The task containing the range indices to define the search boundaries within the RBMatrix.
- * @param rbMatrix The RBMatrix instance to search within.
- * @param searchValue The integer value to find within the RBMatrix.
- * @return int The minimum index where the search value is found, or INT_MAX if not found.
- */
-int parallelSearchInSubtree(Task task, RBMatrix *rbMatrix, int searchValue) {
-    if (!rbMatrix) {
-        fprintf(stderr, "Matrice RB non inizializzata nel processo di ricerca parallela.\n");
-        return INT_MAX;
-    }
 
+/**
+ * @brief Creates a custom MPI datatype for the RBSubMatrix structure.
+ *
+ * This function defines and commits a custom MPI datatype that mirrors the layout of the
+ * RBSubMatrix structure. RBSubMatrix is designed to hold a segment of the Red-Black Tree
+ * nodes along with their count, facilitating efficient parallel search operations across
+ * multiple MPI processes. The custom datatype is essential for correctly interpreting
+ * the bytes received during MPI communications, ensuring that the data structure's integrity
+ * is maintained across different computing environments. The function handles the intricacies
+ * of memory layout such as padding and alignment, which can vary between compilers and platforms.
+ * By creating this custom datatype, it simplifies the MPI communication code, making it
+ * more readable and maintainable. Furthermore, it enhances portability and scalability of
+ * the application by abstracting the data transmission details, making the code agnostic
+ * to the underlying architecture. The function calculates the relative offsets of each
+ * element within the structure and constructs the MPI datatype using MPI_Type_create_struct,
+ * followed by committing it with MPI_Type_commit for later use in MPI communication routines.
+ *
+ * @return MPI_Datatype - The newly created and committed MPI datatype that represents the RBSubMatrix structure.
+ */
+MPI_Datatype createRBSubMatrixType() {
+    RBSubMatrix sampleSubMatrix;
+
+    // Numero di elementi nella struttura
+    int count = 2;
+
+    // Array delle lunghezze degli elementi
+    int array_of_blocklengths[2] = {1, 1};
+
+    // Calcola gli offset all'interno della struttura
+    MPI_Aint array_of_displacements[2];
+    MPI_Get_address(&sampleSubMatrix.nodes, &array_of_displacements[0]);
+    MPI_Get_address(&sampleSubMatrix.count, &array_of_displacements[1]);
+    array_of_displacements[1] -= array_of_displacements[0];
+    array_of_displacements[0] = 0;
+
+    // Tipi dei blocchi
+    MPI_Datatype array_of_types[2] = {MPI_INT, MPI_INT};
+
+    // Creazione del tipo di dato MPI
+    MPI_Datatype customType;
+    MPI_Type_create_struct(count, array_of_blocklengths, array_of_displacements, array_of_types, &customType);
+    MPI_Type_commit(&customType);
+
+    return customType;
+}
+
+/**
+ * @brief Parallel search in a subtree of a Red-Black Tree using OpenMP.
+ *
+ * This function performs a parallel search within a specified subtree of a Red-Black Tree
+ * using OpenMP for intra-process parallelization. The search is conducted for a given value,
+ * and the function returns the global index of the first occurrence of the value within the
+ * RBMatrix. The parallelization is achieved using OpenMP directives for loop parallelization,
+ * and a reduction operation is applied to find the minimum global index across all threads.
+ *
+ * @param task A Task structure defining the search range within the RBNode array.
+ * @param subMatrix An RBSubMatrix structure representing the subtree to search within.
+ * @param searchValue The value to search for within the RBNode array.
+ * @return int The global index of the first occurrence of the searchValue, or INT_MAX if not found.
+ *
+ * @details
+ * The function uses OpenMP to parallelize the search process, with each thread handling
+ * a subset of RBNode elements within the specified subtree. The global index of the first
+ * occurrence of the searchValue is determined, and a reduction operation is employed to find
+ * the minimum index across all threads. The global index is then returned as the result.
+ * If the searchValue is not found within the specified subtree, the function returns INT_MAX.
+ *
+ * @return
+ * The global index of the first occurrence of the searchValue, or INT_MAX if not found.
+ */
+int parallelSearchInSubtree(Task task, RBSubMatrix subMatrix, int searchValue) {
     int globalFoundIndex = INT_MAX;
 
-    // OpenMP parallelization directive with dynamic scheduling and reduction clause
-#pragma omp parallel for schedule(dynamic) reduction(min : globalFoundIndex)
-    for (int i = task.startIndex; i < task.endIndex; ++i) {
-        // Each thread checks a subset of RBMatrix nodes for the search value
-        if (rbMatrix->nodes[i].value == searchValue) {
-            // The 'reduction' clause ensures the minimum index where the value is found among all threads
-            globalFoundIndex = i;
+    #pragma omp parallel for schedule(dynamic) reduction(min:globalFoundIndex)
+    for (int i = 0; i < subMatrix.count; ++i) {
+        if (subMatrix.nodes[i].value == searchValue) {
+            int globalIndex = task.startIndex + i;
+            globalFoundIndex = (globalFoundIndex < globalIndex) ? globalFoundIndex : globalIndex;
         }
     }
 
     return globalFoundIndex;
 }
 
+
 /**
  * @brief Main function for parallel Red-Black Tree search using MPI and OpenMP.
  *
- * The main function coordinates the parallel search of a Red-Black Tree using a hybrid approach
- * with MPI for communication among multiple processes and OpenMP for intra-process parallelism.
- * It initializes MPI, sets the number of OpenMP threads, and handles the distribution of RBMatrix data
- * among MPI processes. The RBMatrix is searched in parallel using OpenMP directives.
- * MPI communication functions like MPI_Bcast, MPI_Scatter, and MPI_Reduce are employed
- * for data sharing and result collection among processes. Additionally, MPI_Barrier ensures synchronization
- * between process stages. The results of the search are collected and saved in an output file.
+ * The main function coordinates the parallel search of a Red-Black Tree (RBTree) using a hybrid approach
+ * with MPI for inter-process communication and OpenMP for intra-process parallelism. 
+ * It initializes the MPI environment, sets the number of OpenMP threads, and handles the distribution 
+ * of RBMatrix data among MPI processes using MPI_Scatterv. The search within each submatrix is then
+ * performed in parallel using OpenMP. The function includes proper memory management for dynamic 
+ * allocation and deallocation of resources. It also ensures synchronization among processes and threads 
+ * for a coherent parallel execution. The final search results are collected and can be saved in an output file.
  *
  * @param argc Number of command-line arguments.
- * @param argv Array of command-line arguments (expected format: [ompNumThreads] [numValues] [seed]).
- * @return int Exit status.
+ * @param argv Array of command-line arguments: expected format includes number of OpenMP threads, 
+ *        number of values in RBTree, random seed, output file name, and CSV file path.
+ * @return int Exit status of the program.
  */
 int main(int argc, char **argv) {
 
@@ -228,44 +276,42 @@ int main(int argc, char **argv) {
     int foundIndex = -1;
 
     RBMatrix *rbMatrix = NULL;
+    Task *tasks = NULL;
+    int *sendCounts = NULL, *displacements = NULL;
 
-    // Process 0 creates and populates the RBMatrix
     if (mpi_rank == 0) {
         rbMatrix = createAndPopulateRBMatrix(numValues);
-
-        // Broadcast RBMatrix metadata and node data to all processes
-        MPI_Bcast(&rbMatrix->totalNodes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&rbMatrix->maxNodes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(rbMatrix->nodes, rbMatrix->totalNodes * sizeof(RBNode), MPI_BYTE, 0, MPI_COMM_WORLD);
-    } else {
-        // Receive RBMatrix metadata and node data from process 0
-        int totalNodes, maxNodes;
-        MPI_Bcast(&totalNodes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        MPI_Bcast(&maxNodes, 1, MPI_INT, 0, MPI_COMM_WORLD);
-        rbMatrix = createMatrix(numValues);
-        rbMatrix->totalNodes = totalNodes;
-        rbMatrix->maxNodes = maxNodes;
-        rbMatrix->nodes = malloc(totalNodes * sizeof(RBNode));
-        MPI_Bcast(rbMatrix->nodes, totalNodes * sizeof(RBNode), MPI_BYTE, 0, MPI_COMM_WORLD);
-    }
-
-    // Synchronize processes
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    // Scatter tasks among processes
-    Task *tasks = NULL;
-    Task myTask;
-    if (mpi_rank == 0) {
         tasks = createTasksForAllProcesses(rbMatrix, mpi_size);
+
+        sendCounts = (int *)malloc(mpi_size * sizeof(int));
+        displacements = (int *)malloc(mpi_size * sizeof(int));
+
+        int offset = 0;
+        for (int i = 0; i < mpi_size; i++) {
+            sendCounts[i] = (tasks[i].endIndex - tasks[i].startIndex) * sizeof(RBNode);
+            displacements[i] = offset;
+            offset += sendCounts[i];
+        }
     }
+
+    // Ricezione del task
+    Task myTask;
+    MPI_Scatter(tasks, sizeof(Task), MPI_BYTE, &myTask, sizeof(Task), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+    // Preparazione della sotto-matrice locale
+    RBSubMatrix localSubMatrix;
+    localSubMatrix.count = myTask.endIndex - myTask.startIndex;
+    localSubMatrix.nodes = (RBNode *)malloc(localSubMatrix.count * sizeof(RBNode));
+
+    // Distribuzione delle sotto-matrici utilizzando MPI_Scatterv
+    MPI_Scatterv(rbMatrix ? rbMatrix->nodes : NULL, sendCounts, displacements, MPI_BYTE, localSubMatrix.nodes, localSubMatrix.count * sizeof(RBNode), MPI_BYTE, 0, MPI_COMM_WORLD);
+    
+    MPI_Barrier(MPI_COMM_WORLD);
 
     double startTime = MPI_Wtime();
 
-    // Scatter tasks to each process
-    MPI_Scatter(tasks, sizeof(Task), MPI_BYTE, &myTask, sizeof(Task), MPI_BYTE, 0, MPI_COMM_WORLD);
-
     // Perform parallel search within each process' task using OpenMP
-    foundIndex = parallelSearchInSubtree(myTask, rbMatrix, searchValue);
+    foundIndex = parallelSearchInSubtree(myTask, localSubMatrix, searchValue);
 
     // Barrier to ensure all processes complete their search
     MPI_Barrier(MPI_COMM_WORLD);
@@ -322,6 +368,16 @@ int main(int argc, char **argv) {
         free(tasks);
     }
 
+    if (localSubMatrix.nodes != NULL) {
+        free(localSubMatrix.nodes);
+    }
+
+    if (mpi_rank == 0) {
+        free(sendCounts);
+        free(displacements);
+    }
+
     MPI_Finalize();
+
     return 0;
 }
