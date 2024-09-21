@@ -70,7 +70,8 @@
     "omp.h": "c",
     "stdlib.h": "c",
     "stdbool.h": "c",
-    "time.h": "c"
+    "time.h": "c",
+    "cstdlib": "c"
   },
   "C_Cpp.errorSquiggles": "enabled"
 }
