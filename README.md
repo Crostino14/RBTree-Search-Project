@@ -79,7 +79,7 @@ Each command should be run in the terminal from the **root directory** of the pr
 ---
 
 ## 📖 Full Report
-For detailed **performance results** and **analysis**, see the full **[Project Report](Project_Report_HPC.pdf)** 📑.
+For detailed **performance results** and **analysis**, see the full **[Project Report](Project Report HPC.pdf)** 📑.
 
 ---
 
