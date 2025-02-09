@@ -35,7 +35,7 @@ The project implements **three versions** of the search algorithm:
 - **RAM:** 16GB DDR5
 
 ### 🛠️ Software
-- **OS:** Windows 10 Pro & Ubuntu 22.04 (via WSL)
+- **OS:** Windows 10 Pro
 - **Compilers:** GCC, NVCC (CUDA 12.3), MPI Compiler
 - **Tools:** Python 3.11 for analysis, CMake for builds
 
