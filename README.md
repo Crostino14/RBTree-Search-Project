@@ -12,7 +12,7 @@ In particular, the sequential version of the algorithm is considered as a baseli
 ## 📖 Theoretical Background
 The algorithm under investigation relies on the **Red-Black AVL Tree**, which combines properties of both **Red-Black Tree** and **AVL Tree** to maintain efficient balance for search operations.
 
-Parallelisation is explored through three distinct paradigms
+Parallelisation is explored through three distinct paradigms:
   - **OpenMP** enables shared-memory multi-threading, exploiting modern CPUs with multiple cores.
   - **MPI** introduces distributed parallelism through message passing, which makes it suitable for cluster environments but also exposes the system to communication overhead.
   - **CUDA** leverages thousands of lightweight GPU cores, enabling highly parallel execution when the problem size is sufficiently large to offset the cost of data transfer between host and device.
