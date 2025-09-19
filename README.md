@@ -1,32 +1,39 @@
 # 🔴⚫ Red-Black Tree Search Project
 
 ## 📌 Overview
-This project focuses on the **parallelisation** of the **Red-Black Tree Search Algorithm**, a self-balancing binary search tree, using different computational approaches:
+This project investigates the parallelisation of the Red-Black Tree Search Algorithm, a self-balancing binary search tree widely used for efficient data retrieval. The study examines how different computational paradigms can be employed to improve performance and scalability. In particular, this project implements 3 different computational approaches:
 - **Sequential implementation** 🏛️ (baseline).
 - **MPI + OpenMP implementation** ⚡ (distributed parallelism).
 - **CUDA + OpenMP implementation** 🚀 (GPU acceleration).
+In particular, the sequential version of the algorithm is considered as a baseline and is compared against two parallel approaches: an implementation based on the Message Passing Interface (MPI) combined with OpenMP, and a GPU-accelerated solution that integrates CUDA with OpenMP.
 
 ## 🎯 Objectives
-- Implement and analyse the **Red-Black AVL Tree Search** algorithm in **parallel computing environments**.
-- Evaluate performance differences between **MPI, OpenMP, and CUDA** implementations.
-- Conduct extensive benchmarking with **different input sizes** and **hardware configurations**.
+The central objective of this work is to analyse the performance of the Red-Black search procedure when executed in different parallel environments. This involves implementing the algorithm in three forms — sequential, MPI+OpenMP, and CUDA+OpenMP — and then comparing them under a variety of workloads and hardware configurations. The research seeks to identify the conditions under which each approach is most effective, as well as to quantify the efficiency gains over the sequential baseline.
 
 ## 📖 Theoretical Background
-- **Red-Black AVL Tree** combines **Red-Black Tree** and **AVL Tree** properties to maintain efficient balance for search operations.
-- **Parallel Computing Approaches:**
-  - **OpenMP**: Multi-threading on shared-memory architectures.
-  - **MPI**: Distributed computing with message-passing.
-  - **CUDA**: GPU acceleration using thousands of cores.
+The algorithm under investigation relies on the **Red-Black AVL Tree**, which combines properties of both **Red-Black Tree** and **AVL Tree** to maintain efficient balance for search operations.
+
+Parallelisation is explored through three distinct paradigms
+  - **OpenMP** enables shared-memory multi-threading, exploiting modern CPUs with multiple cores.
+  - **MPI** introduces distributed parallelism through message passing, which makes it suitable for cluster environments but also exposes the system to communication overhead.
+  - **CUDA** leverages thousands of lightweight GPU cores, enabling highly parallel execution when the problem size is sufficiently large to offset the cost of data transfer between host and device.
 
 ## ⚙️ Implementation
-The project implements **three versions** of the search algorithm:
-1. **Sequential version** (baseline).
-2. **MPI + OpenMP** version: 
-   - Distributes work across **multiple processes** using **MPI**.
-   - Utilises **OpenMP threads** for intra-process parallelism.
-3. **CUDA + OpenMP** version:
-   - **CUDA Kernels** handle subtree search in **parallel**.
-   - **Optimised memory management** with shared memory and atomic operations.
+The implementation is organised across a set of source files located in the `src/` directory, each designed to separate concerns related to algorithmic logic, computational kernel, and matrix operations. Below is a concise description of the main files and their roles:
+
+`RBSequential.c` — Contains the sequential (baseline) implementation of the Red-Black tree search algorithm. It implements the tree operations (insertion, search, balancing) without any form of parallelism. This file serves as a reference to measure speed-ups obtained by the parallel versions.
+
+`RBParallel_MPI_OpenMP.c` — Implements the Red-Black tree search using a hybrid approach: inter-process parallelism provided by MPI, and intra-process parallelism using OpenMP. It orchestrates division of work among MPI processes, handles thread creation within each process, and manages coordination and synchronization overhead.
+
+`RBParallel_CUDA_OpenMP.cu` — Implements the version leveraging CUDA for GPU acceleration, combined with OpenMP for parallelism on the CPU side. It contains kernel definitions for subtree search, routines for memory transfer between host and device, and optimisations such as shared memory use and atomic operations to maintain correctness under parallel execution.
+
+`RBMatrix.c` — Provides utility functions for matrix operations needed by the test harness or algorithmic support (for example, generating input data, transforming test sets). It decouples auxiliary data handling and input matrix setup from the core tree search logic.
+
+`CreateTables.py` — Post-processing script written in Python that reads the CSV output of tests, aggregates the results, and produces tables summarising performance metrics (such as elapsed time, speed-up, scaling behaviour).
+
+`Performance.py` — Another Python script aimed at generating visual representations (plots) of performance trends across different implementations, input sizes, and parallel configurations; it also computes statistical metrics needed for analysis (e.g. mean, variance of runs).
+
+These files together form the full pipeline: from compilation, execution under different configurations, generation of raw result files, to analysis via tables and plots.
 
 ## 🖥️ Experimental Setup
 ### 💻 Hardware
@@ -110,6 +117,7 @@ The **Makefile** automates compilation, testing, cleaning, and performance analy
 To **compile and test** the project with all optimisation levels and generate performance tables and plots, run:
 
 ```sh
+make help
 make clean
 make all
 make all_test1
