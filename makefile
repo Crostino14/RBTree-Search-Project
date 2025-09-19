@@ -1,5 +1,7 @@
 .PHONY: clean all all_test1 all_test2 install_dependencies tables performance compile0 compile1 compile2 compile3 test0 test1 test2 test3 test00 test01 test02 test03
 
+.DEFAULT_GOAL := help
+
 VALS1 = 200000 2000000 20000000
 VALS2 = 20000 200000 2000000
 SEED1 = 123
@@ -7,6 +9,49 @@ SEED2 = 345
 MAX_THREADS = 12
 THREADS = 1 2 4 12
 MPI_PROCESSES = 1 2 4
+
+VALS1 = 200000 2000000 20000000
+VALS2 = 20000 200000 2000000
+SEED1 = 123
+SEED2 = 345
+MAX_THREADS = 12
+THREADS = 1 2 4 12
+MPI_PROCESSES = 1 2 4
+
+# === Colors/Decorations for the menu ===
+ESC := \033
+RESET := $(ESC)[0m
+BOLD := $(ESC)[1m
+DIM := $(ESC)[2m
+FG1 := $(ESC)[38;5;39m
+FG2 := $(ESC)[38;5;208m
+FG3 := $(ESC)[38;5;70m
+FG4 := $(ESC)[38;5;244m
+HEAD := $(ESC)[48;5;236m$(ESC)[38;5;81m
+BOX  := $(ESC)[38;5;240m
+
+help:
+	@printf "$(HEAD)                                                                                        $(RESET)\n"
+	@printf "$(HEAD)  RBTree-Search-Project — Make Commands Menu                                           $(RESET)\n"
+	@printf "$(HEAD)                                                                                        $(RESET)\n"
+	@printf "$(BOX)────────────────────────────────────────────────────────────────────────────────────────$(RESET)\n"
+	@printf "$(BOLD)Usage:$(RESET)  make $(FG1)<target>$(RESET)\n\n"
+	@printf "$(BOLD)Main targets:$(RESET)\n"
+	@awk 'BEGIN {FS":.*## "}; /^[a-zA-Z0-9_\/\.\-]+:.*## / { printf "  $(FG1)%-22s$(RESET)  %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@printf "\n$(BOLD)Useful variables:$(RESET)\n"
+	@printf "  $(FG3)VALS1$(RESET)          = $(VALS1)\n"
+	@printf "  $(FG3)VALS2$(RESET)          = $(VALS2)\n"
+	@printf "  $(FG3)SEED1$(RESET)          = $(SEED1)\n"
+	@printf "  $(FG3)SEED2$(RESET)          = $(SEED2)\n"
+	@printf "  $(FG3)THREADS$(RESET)        = $(THREADS)\n"
+	@printf "  $(FG3)MPI_PROCESSES$(RESET)  = $(MPI_PROCESSES)\n"
+	@printf "  $(FG3)MAX_THREADS$(RESET)    = $(MAX_THREADS)\n"
+	@printf "\n$(BOLD)Examples:$(RESET)\n"
+	@printf "  make all            $(FG4)# build all optimization levels O0..O3$(RESET)\n"
+	@printf "  make test3          $(FG4)# run tests for O3 binaries$(RESET)\n"
+	@printf "  make tables         $(FG4)# generate result tables$(RESET)\n"
+	@printf "  make performance    $(FG4)# create performance plots$(RESET)\n"
+	@printf "$(BOX)────────────────────────────────────────────────────────────────────────────────────────$(RESET)\n"
 
 clean:
 	rm -rf ./build/opt0/*
@@ -226,4 +271,5 @@ tables:
 	python ./src/CreateTables.py
 
 performance:
+
 	python ./src/Performance.py
