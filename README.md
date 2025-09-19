@@ -2,9 +2,11 @@
 
 ## 📚 Project Overview
 This project investigates the parallelisation of the Red-Black Tree Search Algorithm, a self-balancing binary search tree widely used for efficient data retrieval. The study examines how different computational paradigms can be employed to improve performance and scalability. In particular, this project implements 3 different computational approaches:
+
 - **Sequential implementation** 🏛️ (baseline).
 - **MPI + OpenMP implementation** ⚡ (distributed parallelism).
 - **CUDA + OpenMP implementation** 🚀 (GPU acceleration).
+
 In particular, the sequential version of the algorithm is considered as a baseline and is compared against two parallel approaches: an implementation based on the Message Passing Interface (MPI) combined with OpenMP, and a GPU-accelerated solution that integrates CUDA with OpenMP.
 
 ## 📖 Theoretical Background
