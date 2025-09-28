@@ -10,14 +10,6 @@ MAX_THREADS = 12
 THREADS = 1 2 4 12
 MPI_PROCESSES = 1 2 4
 
-VALS1 = 200000 2000000 20000000
-VALS2 = 20000 200000 2000000
-SEED1 = 123
-SEED2 = 345
-MAX_THREADS = 12
-THREADS = 1 2 4 12
-MPI_PROCESSES = 1 2 4
-
 # === Colors/Decorations for the menu ===
 ESC := \033
 RESET := $(ESC)[0m
@@ -273,3 +265,4 @@ tables:
 performance:
 
 	python ./src/Performance.py
+
