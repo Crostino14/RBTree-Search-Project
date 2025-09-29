@@ -1,4 +1,18 @@
-# 🔴⚫ Red-Black Tree Search Project
+# 🔴⚫🌳 Red-Black Tree Search Project
+
+<div align="center">
+
+![MPI](https://img.shields.io/badge/MPI-0071C5?style=for-the-badge&logo=openmpi&logoColor=white)
+![OpenMP](https://img.shields.io/badge/OpenMP-7CB342?style=for-the-badge&logo=openmp&logoColor=white)
+![CUDA](https://img.shields.io/badge/CUDA-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
+![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+*Parallelized Red-Black Tree search with MPI, OpenMP, and CUDA - Performance analysis on various hardware configurations*
+
+[📖 Full Report](#-full-report) • [🛠️ Makefile Commands](#-makefile-commands) • [📊 Performance](#-performance-analysis)
+
+</div>
 
 ## 📚 Project Overview
 This project investigates the parallelisation of the Red-Black Tree Search Algorithm, a self-balancing binary search tree widely used for efficient data retrieval. The study examines how different computational paradigms can be employed to improve performance and scalability. In particular, this project implements 3 different computational approaches:
@@ -125,6 +139,7 @@ make performance
 ```
 
 Each command should be run in the terminal from the **root directory** of the project.
+
 ---
 
 ## 📖 Full Report
@@ -132,9 +147,14 @@ For detailed **performance results** and **analysis**, see the full **[Project R
 
 ---
 
+## 🔗 Related Resources
+
+- [OpenMP Official Documentation](https://www.openmp.org/specifications/)
+- [MPI Forum Standards](https://www.mpi-forum.org/)
+- [NVIDIA CUDA Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/)
+
+---
+
 ## 🤝 Contributors
 - **Agostino Cardamone** 🎓 (Student & Creator)
 - **Supervisor:** Francesco Moscato 🏫
-
-
-
