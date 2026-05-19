@@ -1,6 +1,6 @@
-# 🔴⚫🌳 Red-Black Tree Search Project
-
 <div align="center">
+
+<h1>🔴⚫🌳 Red-Black Tree Search Project 🌳 🔴⚫</h1>
 
 ![MPI](https://img.shields.io/badge/MPI-0071C5?style=for-the-badge&logo=openmpi&logoColor=white)
 ![OpenMP](https://img.shields.io/badge/OpenMP-7CB342?style=for-the-badge&logo=openmp&logoColor=white)
